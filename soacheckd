@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# soacheckd - report changes in serial numbers
+#
+
+P=$(basename $0)
+BD=$(dirname $0)
+DD=${BD}/data
+IF="${BD}/zones-to-check"
+LOG="${BD}/soacheckd.log"
+
+mkdir -p ${DD}
+
+for z in `grep -v ^# ${IF}` ; do
+	if [ -r ${DD}/soa.${z} ] ; then
+		PREV=$(cat ${DD}/soa.${z} | awk '{print $7}')
+	else
+		host -t soa ${z} > ${DD}/soa.${z}
+		PREV=$(cat ${DD}/soa.${z} | awk '{print $7}')
+	fi
+
+	host -t soa ${z} > ${DD}/soa.${z}
+	CURRENT=$(cat ${DD}/soa.${z} | awk '{print $7}')
+
+	if [ "x${PREV}" != "x${CURRENT}" ] ; then
+		echo $(date) ${HOST} ${P}[$$] ${z} serial changed from ${PREV} to ${CURRENT} | tee -a ${LOG}
+	fi
+done
