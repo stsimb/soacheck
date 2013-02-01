@@ -11,18 +11,27 @@ LOG="${BD}/soacheckd.log"
 
 mkdir -p ${DD}
 
-for z in `grep -v ^# ${IF}` ; do
+getSOA() {
+	host -t soa $1 > ${DD}/soa.$1
+}
+
+SOAvalue() {
+	cat ${DD}/soa.$1 | awk '{print $7}'
+}
+
+for z in `egrep -v "^(#|$)" ${IF}` ; do
 	if [ -r ${DD}/soa.${z} ] ; then
-		PREV=$(cat ${DD}/soa.${z} | awk '{print $7}')
+		PREV=$(SOAvalue ${z})
 	else
-		host -t soa ${z} > ${DD}/soa.${z}
-		PREV=$(cat ${DD}/soa.${z} | awk '{print $7}')
+		getSOA ${z}
+		PREV=$(SOAvalue ${z})
 	fi
 
-	host -t soa ${z} > ${DD}/soa.${z}
-	CURRENT=$(cat ${DD}/soa.${z} | awk '{print $7}')
+	getSOA ${z}
+	CURRENT=$(SOAvalue ${z})
 
 	if [ "x${PREV}" != "x${CURRENT}" ] ; then
 		echo $(date) ${HOST} ${P}[$$] ${z} serial changed from ${PREV} to ${CURRENT} | tee -a ${LOG}
 	fi
 done
+
